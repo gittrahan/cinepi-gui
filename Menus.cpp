@@ -3,6 +3,8 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+#include <signal.h>
+#include <sys/types.h>
 
 std::string floatToFormattedString(float value) {
     std::ostringstream oss;
@@ -202,6 +204,26 @@ void Menus::menu_bottom()
             ImGui::Separator();
             ImGui::Text("CPU: %3.1f%%", app.stats.stat_cpu);
             ImGui::Separator();
+
+            // White photo capture button
+            {
+                ImDrawList* fg_draw = ImGui::GetForegroundDrawList();
+                float bar_h = ImGui::GetFrameHeight();
+                float btn_r = 18.0f;
+                float btn_x = viewport->Pos.x + viewport->Size.x - 50.0f;
+                float btn_y = viewport->Pos.y + viewport->Size.y - bar_h * 0.5f;
+
+                fg_draw->AddCircleFilled(ImVec2(btn_x, btn_y), btn_r, IM_COL32(240, 240, 240, 230));
+                fg_draw->AddCircle(ImVec2(btn_x, btn_y), btn_r + 2.0f, IM_COL32(160, 160, 160, 255), 32, 2.0f);
+
+                float dx = io.MousePos.x - btn_x;
+                float dy = io.MousePos.y - btn_y;
+                if (io.MouseClicked[0] && (dx * dx + dy * dy) <= btn_r * btn_r) {
+                    if (app.cinepiraw.connected()) {
+                        ::kill(app.cinepiraw.get_context()->procid, SIGUSR1);
+                    }
+                }
+            }
 
             ImGui::EndMenuBar();
         }
