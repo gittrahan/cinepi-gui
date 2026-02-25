@@ -24,21 +24,22 @@ key_t SharedContext::get_shared_memory_key() {
 }
 
 void SharedContext::bind_shared_memory() {
-    int segment_id;
+    shared_memory = nullptr;
+
     key_t key = get_shared_memory_key();
 
-    bool shB = true, smB = true;
-    segment_id = shmget(key, sizeof(SharedMemoryBuffer), S_IRUSR | S_IWUSR);
+    int segment_id = shmget(key, sizeof(SharedMemoryBuffer), S_IRUSR | S_IWUSR);
     if (segment_id == -1) {
-        shB = false;
+        return;
     }
 
-    shared_memory = (SharedMemoryBuffer*)shmat(segment_id, NULL, 0);
-    if (shared_memory == (void*) -1) {
-        smB = false;
+    void *ptr = shmat(segment_id, NULL, 0);
+    if (ptr == (void*)-1) {
+        return;
     }
 
-    state_ |= (uint8_t)(shB && smB);
+    shared_memory = (SharedMemoryBuffer*)ptr;
+    state_ |= STATE_VALID;
 }
 
 void SharedContext::threadTask(){
@@ -48,6 +49,8 @@ void SharedContext::threadTask(){
         if(context == nullptr){
             // console->critical("shared_memory dropped!");
             state_ |= STATE_NULL_REF;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;
         } else {
             state_ &= ~STATE_NULL_REF;
         }
