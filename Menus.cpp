@@ -145,11 +145,11 @@ void Menus::menu_top()
             }
             ImGui::Separator();
 
-            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(180, 32), IM_COL32(100, 100, 100, 255), "FPS");
-            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(400, 32), IM_COL32(100, 100, 100, 255), "ISO");
-            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(580, 32), IM_COL32(100, 100, 100, 255), "SHT");
-            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(1005, 32), IM_COL32(100, 100, 100, 255), "IRIS");
-            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(1200, 32), IM_COL32(100, 100, 100, 255), "WB");
+            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(180, 8), IM_COL32(100, 100, 100, 255), "FPS");
+            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(400, 8), IM_COL32(100, 100, 100, 255), "ISO");
+            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(580, 8), IM_COL32(100, 100, 100, 255), "SHT");
+            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(940, 8), IM_COL32(100, 100, 100, 255), "IRIS");
+            draw_list->AddText(app.ui24, app.ui24->FontSize, ImVec2(1200, 8), IM_COL32(100, 100, 100, 255), "WB");
 
             ImGui::EndMenuBar();   
         }
@@ -209,14 +209,19 @@ void Menus::menu_bottom()
             {
                 ImDrawList* fg_draw = ImGui::GetForegroundDrawList();
                 float bar_h = ImGui::GetFrameHeight();
-                float btn_y = viewport->Pos.y + viewport->Size.y - bar_h * 0.5f;
+                float btn_y = viewport->Pos.y + viewport->Size.y - bar_h * 0.5f - 10.0f;
                 SharedMemoryBuffer* ctx = app.cinepiraw.get_context();
 
-                // Red record button
+                // Red record button — filled when idle, outline when recording
                 float rec_x = viewport->Pos.x + viewport->Size.x - 120.0f;
                 float rec_r = 22.0f;
-                fg_draw->AddCircleFilled(ImVec2(rec_x, btn_y), rec_r, IM_COL32(220, 30, 30, 230));
-                fg_draw->AddCircle(ImVec2(rec_x, btn_y), rec_r + 2.0f, IM_COL32(180, 0, 0, 255), 32, 2.0f);
+                if (is_recording) {
+                    fg_draw->AddCircle(ImVec2(rec_x, btn_y), rec_r, IM_COL32(220, 30, 30, 255), 32, 3.0f);
+                    fg_draw->AddCircle(ImVec2(rec_x, btn_y), rec_r + 2.0f, IM_COL32(180, 0, 0, 255), 32, 2.0f);
+                } else {
+                    fg_draw->AddCircleFilled(ImVec2(rec_x, btn_y), rec_r, IM_COL32(220, 30, 30, 230));
+                    fg_draw->AddCircle(ImVec2(rec_x, btn_y), rec_r + 2.0f, IM_COL32(180, 0, 0, 255), 32, 2.0f);
+                }
 
                 // White photo button
                 float photo_x = viewport->Pos.x + viewport->Size.x - 55.0f;
@@ -225,19 +230,15 @@ void Menus::menu_bottom()
                 fg_draw->AddCircle(ImVec2(photo_x, btn_y), photo_r + 2.0f, IM_COL32(160, 160, 160, 255), 32, 2.0f);
 
                 if (io.MouseClicked[0]) {
-                    console->info("click at ({:.0f},{:.0f}) | btn_y={:.0f} bar_h={:.0f} ctx={} procid={}",
-                        io.MousePos.x, io.MousePos.y,
-                        btn_y, bar_h,
-                        (void*)ctx,
-                        ctx ? ctx->procid : -1);
-
                     float rdx = io.MousePos.x - rec_x,   rdy = io.MousePos.y - btn_y;
                     float pdx = io.MousePos.x - photo_x, pdy = io.MousePos.y - btn_y;
 
                     if (rdx*rdx + rdy*rdy <= rec_r*rec_r) {
                         console->info("record button hit, sending SIGUSR2 to pid {}", ctx ? ctx->procid : -1);
-                        if (ctx != nullptr && ctx->procid > 0)
+                        if (ctx != nullptr && ctx->procid > 0) {
                             ::kill(ctx->procid, SIGUSR2);
+                            is_recording = !is_recording;
+                        }
                     } else if (pdx*pdx + pdy*pdy <= photo_r*photo_r) {
                         console->info("photo button hit, sending SIGUSR1 to pid {}", ctx ? ctx->procid : -1);
                         if (ctx != nullptr && ctx->procid > 0)

@@ -54,7 +54,8 @@ class Menus : public Page
         void menu_bottom();
 
         ImgAsset logo;
-        
+        bool is_recording = false;
+
 };
 
 class Overlays : public Page
