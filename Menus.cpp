@@ -217,22 +217,29 @@ void Menus::menu_bottom()
                 float rec_r = 22.0f;
                 fg_draw->AddCircleFilled(ImVec2(rec_x, btn_y), rec_r, IM_COL32(220, 30, 30, 230));
                 fg_draw->AddCircle(ImVec2(rec_x, btn_y), rec_r + 2.0f, IM_COL32(180, 0, 0, 255), 32, 2.0f);
-                {
-                    float dx = io.MousePos.x - rec_x, dy = io.MousePos.y - btn_y;
-                    if (io.MouseClicked[0] && (dx*dx + dy*dy) <= rec_r*rec_r) {
-                        if (ctx != nullptr && ctx->procid > 0)
-                            ::kill(ctx->procid, SIGUSR2);
-                    }
-                }
 
                 // White photo button
                 float photo_x = viewport->Pos.x + viewport->Size.x - 55.0f;
                 float photo_r = 18.0f;
                 fg_draw->AddCircleFilled(ImVec2(photo_x, btn_y), photo_r, IM_COL32(240, 240, 240, 230));
                 fg_draw->AddCircle(ImVec2(photo_x, btn_y), photo_r + 2.0f, IM_COL32(160, 160, 160, 255), 32, 2.0f);
-                {
-                    float dx = io.MousePos.x - photo_x, dy = io.MousePos.y - btn_y;
-                    if (io.MouseClicked[0] && (dx*dx + dy*dy) <= photo_r*photo_r) {
+
+                if (io.MouseClicked[0]) {
+                    console->info("click at ({:.0f},{:.0f}) | btn_y={:.0f} bar_h={:.0f} ctx={} procid={}",
+                        io.MousePos.x, io.MousePos.y,
+                        btn_y, bar_h,
+                        (void*)ctx,
+                        ctx ? ctx->procid : -1);
+
+                    float rdx = io.MousePos.x - rec_x,   rdy = io.MousePos.y - btn_y;
+                    float pdx = io.MousePos.x - photo_x, pdy = io.MousePos.y - btn_y;
+
+                    if (rdx*rdx + rdy*rdy <= rec_r*rec_r) {
+                        console->info("record button hit, sending SIGUSR2 to pid {}", ctx ? ctx->procid : -1);
+                        if (ctx != nullptr && ctx->procid > 0)
+                            ::kill(ctx->procid, SIGUSR2);
+                    } else if (pdx*pdx + pdy*pdy <= photo_r*photo_r) {
+                        console->info("photo button hit, sending SIGUSR1 to pid {}", ctx ? ctx->procid : -1);
                         if (ctx != nullptr && ctx->procid > 0)
                             ::kill(ctx->procid, SIGUSR1);
                     }
